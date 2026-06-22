@@ -6,7 +6,6 @@
 <style>
   :root{
     --bg:#ffffff; --bg2:#f7f6f2; --border:#e3e1d8; --text:#222; --muted:#777;
-    --primary: #378ADD;
   }
   body{
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -154,14 +153,11 @@ const CATMAP = {
   "학급경영":"학급경영"
 };
 
-// 전역 세션 저장소 (모달 팝업 맵핑용)
 let allSessionsMap = {};
 
 const container = document.getElementById('cal-container');
 const statusEl = document.getElementById('status');
 const btn = document.getElementById('refresh-btn');
-
-// 모달 엘리먼트
 const modal = document.getElementById("detailModal");
 const closeModal = document.querySelector(".close");
 
@@ -180,22 +176,22 @@ function normalizeTime(timeStr) {
 
 function parseRows(rows){
   const recs = [];
-  // 시트 구조 헤더 스킵 후 파싱
-  for(let i=2;i<rows.length;i++){
+  for(let i=2; i<rows.length; i++){
     const r = rows[i];
     if(!r || r.length < 11) continue;
     
-    const month = (r[1]||"").trim();
-    const day = (r[2]||"").trim();
-    const weekday = (r[3]||"").trim();
-    const time = (r[4]||"").trim();
-    const teacher = (r[6]||"").trim();
-    const target = (r[7]||"").trim();   // 연수 대상
-    const topic = (r[8]||"").trim();    // 연수 주제
-    const record = (r[9]||"").trim();   // 녹화본 제공 여부
-    const title = (r[10]||"").trim();   // 강의 제목
-    const notice = (r[11]||"").trim();   // 강의 사전 안내 사항
-    const material = (r[12]||"").trim(); // 강의자료 제공 여부
+    // 헤더 구조 순서에 맞춰 정확한 열 매칭 (0부터 시작)
+    const month = (r[1]||"").trim();    // B열
+    const day = (r[2]||"").trim();      // C열
+    const weekday = (r[3]||"").trim();  // D열
+    const time = (r[4]||"").trim();     // E열
+    const teacher = (r[5]||"").trim();  // F열 (강사명)
+    const target = (r[6]||"").trim();   // G열 (연수 대상)
+    const topic = (r[7]||"").trim();    // H열 (연수 주제)
+    const record = (r[8]||"").trim();   // I열 (녹화본 제공여부)
+    const title = (r[9]||"").trim();    // J열 (강의 제목) -> 실제 시트의 J열 매칭 확인
+    const notice = (r[10]||"").trim();  // K열 (강의 사전 안내 사항)
+    const material = (r[11]||"").trim(); // L열 (강의자료 제공 여부)
 
     if(WEEK.indexOf(weekday)===-1) continue;
     if(!title && !teacher) continue;
@@ -203,7 +199,7 @@ function parseRows(rows){
     recs.push({month, day, weekday, time, teacher, target, topic, record, title, notice, material});
   }
   
-  // [주차 꼬임 방지 핵심] 날짜 순으로 완벽하게 데이터를 사전 정렬합니다.
+  // 날짜 및 시간 오름차순 정렬
   recs.sort((a, b) => {
     if(parseInt(a.month) !== parseInt(b.month)) return parseInt(a.month) - parseInt(b.month);
     if(parseInt(a.day) !== parseInt(b.day)) return parseInt(a.day) - parseInt(b.day);
@@ -213,25 +209,25 @@ function parseRows(rows){
   return recs;
 }
 
-// 주차별 그룹 빌더 (정렬된 순서대로 7일 단위 분할 정돈)
+// 주차 분리 로직 개선 (날짜가 연속되거나 끊길 때 빈 칸 유지하면서 달력 형태로 정돈)
 function buildRows(recs){
   const weeks = [];
   if(recs.length === 0) return weeks;
 
   let currentWeek = new Array(7).fill(null);
-  let isFirstWeek = true;
-
+  
+  // 첫 데이터의 날짜 기준으로 첫 주차 시작 설정
   recs.forEach(rec => {
     const wIdx = WEEK.indexOf(rec.weekday);
     
-    // 이전 주차에서 넘어가거나 월요일을 만나면 새 주차 블록 개설
-    if (!isFirstWeek && wIdx === 0 && currentWeek.some(c => c !== null) && !currentWeek[0]) {
+    // 만약 한 주차 내의 해당 요일에 이미 다른 날짜 데이터가 들어가 있다면 주차를 넘김
+    if (currentWeek[wIdx] && (currentWeek[wIdx].day !== rec.day || currentWeek[wIdx].month !== rec.month)) {
       weeks.push(currentWeek);
       currentWeek = new Array(7).fill(null);
     }
     
-    // 만약 이미 해당 요일에 다른 날짜의 데이터가 차 있다면 주차 분리
-    if (currentWeek[wIdx] && (currentWeek[wIdx].day !== rec.day || currentWeek[wIdx].month !== rec.month)) {
+    // 월요일을 만나고 이미 주차에 데이터가 어느 정도 차 있다면 새로운 주차로 판단
+    if (wIdx === 0 && currentWeek.some(c => c !== null) && currentWeek[0] && currentWeek[0].day !== rec.day) {
       weeks.push(currentWeek);
       currentWeek = new Array(7).fill(null);
     }
@@ -240,7 +236,6 @@ function buildRows(recs){
       currentWeek[wIdx] = {month:rec.month, day:rec.day, weekday:rec.weekday, sessions:[]};
     }
     currentWeek[wIdx].sessions.push(rec);
-    isFirstWeek = false;
   });
 
   if (currentWeek.some(c => c !== null)) {
@@ -251,7 +246,7 @@ function buildRows(recs){
 
 function render(weeks){
   let html = '';
-  allSessionsMap = {}; // 초기화
+  allSessionsMap = {};
   
   weeks.forEach((week, index) => {
     const validCells = week.filter(c => c !== null);
@@ -291,9 +286,9 @@ function render(weeks){
           targetSessions.forEach(s => {
             const cat = CATMAP[s.topic] || "기타";
             const sId = `sess_${s.month}_${s.day}_${s.time.replace(/[^a-zA-Z0-9]/g,'')}`;
-            allSessionsMap[sId] = s; // 전역 데이터 바인딩
+            allSessionsMap[sId] = s;
             
-            // 핵심 수정: 연수주제와 강의제목만 메인에 깔끔하게 배치
+            // 시트 열 매칭 수정완료: 연수주제(H열)와 강의제목(J열)만 출력
             cellInner += `<div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
               + `  <div class="topic-tag">#${escapeHtml(s.topic)}</div>`
               + `  <div class="title">${escapeHtml(s.title)}</div>`
@@ -330,7 +325,6 @@ function render(weeks){
   container.innerHTML = html;
 }
 
-// 팝업 상세 창 띄우기 함수
 window.openSessionDetail = function(sId) {
   const s = allSessionsMap[sId];
   if(!s) return;
@@ -347,7 +341,6 @@ window.openSessionDetail = function(sId) {
   modal.style.display = "block";
 }
 
-// 팝업 닫기 이벤트 핸들러
 closeModal.onclick = function() { modal.style.display = "none"; }
 window.onclick = function(event) { if (event.target == modal) { modal.style.display = "none"; } }
 
