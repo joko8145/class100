@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2026 여름방학 교실백점 특강 캘린더</title>
 <style>
   :root{
@@ -85,25 +86,51 @@
     display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
   }
   .modal-content {
-    background-color: #fefefe; margin: 10% auto; padding: 24px; border: 1px solid #888; width: 80%; max-width: 550px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative;
+    background-color: #fefefe; margin: 15% auto; padding: 24px; border: 1px solid #888; width: 85%; max-width: 500px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative;
   }
   .close {
     color: #aaa; position: absolute; right: 20px; top: 16px; font-size: 28px; font-weight: bold; cursor: pointer;
   }
   .close:hover { color: #222; }
-  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #111; line-height: 1.5; padding-right: 24px; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; color: #111; line-height: 1.5; padding-right: 24px; }
   .info-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
   .info-table th, .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
   .info-table th { background: var(--bg2); color: #555; width: 30%; font-weight: 600; }
   .info-table td { color: #222; line-height: 1.5; white-space: pre-wrap; }
 
   .error-box{ font-size:13px; color:var(--muted); padding:16px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+
+  /* 📱 모바일 최적화 (가로폭이 768px 이하일 때 미디어 쿼리 작동) */
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    h1 { font-size: 18px; }
+    .legend { gap: 6px; font-size: 11px; }
+    .week-block { padding: 12px; margin-bottom: 16px; }
+    
+    /* 요일 격자를 숨기고 세션 리스트형태로 재배치 */
+    .grid { display: flex; flex-direction: column; min-width: auto; gap: 12px; }
+    .dow { display: none; } /* 요일 헤더 숨김 */
+    
+    .cell { min-height: auto; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .cell.empty { display: none; } /* 빈 날짜 숨김 */
+    
+    .date { font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 8px; color: #000; }
+    .date::after { content: "요일"; font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: normal; } /* 요일 텍스트 보강은 스크립트에서 자동 처리됨 */
+    
+    .time-slot { min-height: auto; flex-direction: row; align-items: flex-start; gap: 8px; background: transparent; border: none; padding: 2px 0; }
+    .time-label { width: 45px; shrink: 0; background: #eee; text-align: center; padding: 2px 4px; border-radius: 4px; color: #555; margin-bottom: 0; }
+    .sess { margin-top: -2px; }
+    
+    .modal-content { margin: 30% auto; padding: 16px; width: 90%; }
+    .info-table th { width: 35%; padding: 8px; font-size: 12px; }
+    .info-table td { padding: 8px; font-size: 12px; }
+  }
 </style>
 </head>
 <body>
 
 <h1>2026 여름방학 교실백점 특강 캘린더</h1>
-<div class="sub">구글 시트와 연동되어 있습니다. 주차별 일정을 고정 시간대별로 정렬하여 보여주며, 카드를 클릭하면 상세 안내가 나타납니다.</div>
+<div class="sub">구글 시트와 실시간 연동됩니다. (7/6 월요일부터 시작 정렬 완료, 모바일 세로 뷰 지원)</div>
 
 <div class="legend">
   <span><span class="dot dot-자기계발"></span>자기계발</span>
@@ -180,18 +207,17 @@ function parseRows(rows){
     const r = rows[i];
     if(!r || r.length < 11) continue;
     
-    // 헤더 구조 순서에 맞춰 정확한 열 매칭 (0부터 시작)
-    const month = (r[1]||"").trim();    // B열
-    const day = (r[2]||"").trim();      // C열
-    const weekday = (r[3]||"").trim();  // D열
-    const time = (r[4]||"").trim();     // E열
-    const teacher = (r[5]||"").trim();  // F열 (강사명)
-    const target = (r[6]||"").trim();   // G열 (연수 대상)
-    const topic = (r[7]||"").trim();    // H열 (연수 주제)
-    const record = (r[8]||"").trim();   // I열 (녹화본 제공여부)
-    const title = (r[9]||"").trim();    // J열 (강의 제목) -> 실제 시트의 J열 매칭 확인
-    const notice = (r[10]||"").trim();  // K열 (강의 사전 안내 사항)
-    const material = (r[11]||"").trim(); // L열 (강의자료 제공 여부)
+    const month = (r[1]||"").trim();    
+    const day = (r[2]||"").trim();      
+    const weekday = (r[3]||"").trim();  
+    const time = (r[4]||"").trim();     
+    const teacher = (r[5]||"").trim();  
+    const target = (r[6]||"").trim();   
+    const topic = (r[7]||"").trim();    
+    const record = (r[8]||"").trim();   
+    const title = (r[9]||"").trim();    
+    const notice = (r[10]||"").trim();  
+    const material = (r[11]||"").trim(); 
 
     if(WEEK.indexOf(weekday)===-1) continue;
     if(!title && !teacher) continue;
@@ -199,7 +225,6 @@ function parseRows(rows){
     recs.push({month, day, weekday, time, teacher, target, topic, record, title, notice, material});
   }
   
-  // 날짜 및 시간 오름차순 정렬
   recs.sort((a, b) => {
     if(parseInt(a.month) !== parseInt(b.month)) return parseInt(a.month) - parseInt(b.month);
     if(parseInt(a.day) !== parseInt(b.day)) return parseInt(a.day) - parseInt(b.day);
@@ -209,38 +234,70 @@ function parseRows(rows){
   return recs;
 }
 
-// 주차 분리 로직 개선 (날짜가 연속되거나 끊길 때 빈 칸 유지하면서 달력 형태로 정돈)
+// [핵심 변경] 7월 6일(월)부터 날짜를 계산해 빈 주차 및 날짜칸을 유연하게 채워주는 빌더 함수
 function buildRows(recs){
   const weeks = [];
-  if(recs.length === 0) return weeks;
-
-  let currentWeek = new Array(7).fill(null);
   
-  // 첫 데이터의 날짜 기준으로 첫 주차 시작 설정
-  recs.forEach(rec => {
-    const wIdx = WEEK.indexOf(rec.weekday);
-    
-    // 만약 한 주차 내의 해당 요일에 이미 다른 날짜 데이터가 들어가 있다면 주차를 넘김
-    if (currentWeek[wIdx] && (currentWeek[wIdx].day !== rec.day || currentWeek[wIdx].month !== rec.month)) {
-      weeks.push(currentWeek);
-      currentWeek = new Array(7).fill(null);
-    }
-    
-    // 월요일을 만나고 이미 주차에 데이터가 어느 정도 차 있다면 새로운 주차로 판단
-    if (wIdx === 0 && currentWeek.some(c => c !== null) && currentWeek[0] && currentWeek[0].day !== rec.day) {
-      weeks.push(currentWeek);
-      currentWeek = new Array(7).fill(null);
-    }
+  // 기준 시작점: 2026년 7월 6일 (월요일)
+  let startMeta = { month: 7, day: 6 };
+  
+  // 현재 날짜 상태 추적 포인터
+  let currentMonth = startMeta.month;
+  let currentDay = startMeta.day;
+  
+  // 윤년이 아니므로 기본 달들의 일수 세팅
+  const daysInMonth = { 7: 31, 8: 31, 9: 30 }; 
 
-    if(!currentWeek[wIdx]) {
-      currentWeek[wIdx] = {month:rec.month, day:rec.day, weekday:rec.weekday, sessions:[]};
+  function advanceOneDay(m, d) {
+    d++;
+    if(d > daysInMonth[m]) {
+      d = 1;
+      m++;
     }
-    currentWeek[wIdx].sessions.push(rec);
-  });
-
-  if (currentWeek.some(c => c !== null)) {
-    weeks.push(currentWeek);
+    return { month: m, day: d };
   }
+
+  // 데이터의 마지막 날짜를 구함
+  let lastRec = recs[recs.length - 1];
+  let endMonth = lastRec ? parseInt(lastRec.month) : 8;
+  let endDay = lastRec ? parseInt(lastRec.day) : 31;
+  
+  let loopActive = true;
+  let safetyCount = 0;
+
+  while(loopActive && safetyCount < 100) {
+    safetyCount++;
+    let currentWeek = new Array(7).fill(null);
+    let hasAnyDataInWeek = false;
+
+    for(let wIdx = 0; wIdx < 7; wIdx++) {
+      const matchRecs = recs.filter(r => parseInt(r.month) === currentMonth && parseInt(r.day) === currentDay);
+      
+      currentWeek[wIdx] = {
+        month: currentMonth.toString(),
+        day: currentDay.toString(),
+        weekday: WEEK[wIdx],
+        sessions: matchRecs
+      };
+
+      if(matchRecs.length > 0) {
+        hasAnyDataInWeek = true;
+      }
+
+      // 날짜 한 칸 전진
+      let nextDate = advanceOneDay(currentMonth, currentDay);
+      currentMonth = nextDate.month;
+      currentDay = nextDate.day;
+    }
+
+    weeks.push(currentWeek);
+
+    // 루프 종료 조건: 현재 도는 날짜가 최종 시트 날짜 데이터를 넘어섰고 다음 루프가 월요일 시작점일 때
+    if((currentMonth > endMonth) || (currentMonth === endMonth && currentDay > endDay)) {
+      loopActive = false;
+    }
+  }
+
   return weeks;
 }
 
@@ -253,8 +310,9 @@ function render(weeks){
     const startText = validCells.length > 0 ? `${validCells[0].month}/${validCells[0].day}` : '';
     const endText = validCells.length > 0 ? `${validCells[validCells.length-1].month}/${validCells[validCells.length-1].day}` : '';
     
+    // 이번 주차에 배치된 총 연수 세션 수가 0개이면 화면 간소화를 위해 출력을 패스할 수도 있으나, 7/6 시작을 명시했으므로 노출합니다.
     html += `<div class="week-block">`;
-    html += `  <div class="week-title">${index + 1}주차 일시 (${startText} ~ ${endText})</div>`;
+    html += `  <div class="week-title">${index + 1}주차 (${startText} ~ ${endText})</div>`;
     html += `  <div class="grid-wrap">`;
     html += `    <div class="grid">`;
     
@@ -263,12 +321,11 @@ function render(weeks){
     });
     
     week.forEach(cell=>{
-      if(!cell){
-        html += '<div class="cell empty"></div>';
-        return;
-      }
+      // 세션이 완전히 비어있더라도 달력 틀은 유지하되 모바일 뷰에서는 css로 숨김처리 됨
+      let hasSessions = cell.sessions && cell.sessions.length > 0;
+      let emptyClass = hasSessions ? "" : " empty-mobile";
       
-      let cellInner = `<div class="date">${escapeHtml(cell.month)}/${escapeHtml(cell.day)}</div>`;
+      let cellInner = `<div class="date">${escapeHtml(cell.month)}/${escapeHtml(cell.day)} (${escapeHtml(cell.weekday)})</div>`;
       const slotMap = { "10:00":[], "13:00":[], "16:00":[], "19:30":[], "기타":[] };
       
       cell.sessions.forEach(s => {
@@ -277,25 +334,38 @@ function render(weeks){
         else slotMap["기타"].push(s);
       });
       
+      let hasAnySlotContent = false;
+
       FIXED_TIMES.forEach(fixedTime => {
-        cellInner += `<div class="time-slot">`;
-        cellInner += `  <span class="time-label">${fixedTime}</span>`;
-        
         const targetSessions = slotMap[fixedTime];
+        
+        // 모바일 스크롤 완화를 위해 내용이 있는 시간대만 출력 뼈대 구성
+        let slotInner = "";
         if(targetSessions && targetSessions.length > 0) {
+          hasAnySlotContent = true;
           targetSessions.forEach(s => {
             const cat = CATMAP[s.topic] || "기타";
             const sId = `sess_${s.month}_${s.day}_${s.time.replace(/[^a-zA-Z0-9]/g,'')}`;
             allSessionsMap[sId] = s;
             
-            // 시트 열 매칭 수정완료: 연수주제(H열)와 강의제목(J열)만 출력
-            cellInner += `<div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
+            slotInner += `<div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
               + `  <div class="topic-tag">#${escapeHtml(s.topic)}</div>`
               + `  <div class="title">${escapeHtml(s.title)}</div>`
               + `</div>`;
           });
         }
-        cellInner += `</div>`;
+
+        // 고정 슬롯 렌더링 (PC 전용으로 상시 노출시키되 모바일에서는 콘텐츠 유무에 따라 조절되도록 내부 포함)
+        if(slotInner !== "") {
+          cellInner += `<div class="time-slot">`;
+          cellInner += `  <span class="time-label">${fixedTime}</span>${slotInner}`;
+          cellInner += `</div>`;
+        } else {
+          // 비어있는 타임존이라도 PC뷰의 레이아웃 격자를 위해 빈 껍데기 유지
+          cellInner += `<div class="time-slot empty-slot-pc">`;
+          cellInner += `  <span class="time-label">${fixedTime}</span>`;
+          cellInner += `</div>`;
+        }
       });
       
       if(slotMap["기타"].length > 0) {
@@ -314,7 +384,9 @@ function render(weeks){
         });
       }
       
-      html += `<div class="cell">${cellInner}</div>`;
+      // 만약 모바일 뷰이고 해당 일자에 강의가 아예 없으면 굳이 빈 칸을 길게 보여주지 않도록 분기 렌더링을 돕는 클래스 부여
+      let finalCellClass = hasSessions ? "cell" : "cell empty";
+      html += `<div class="${finalCellClass}">${cellInner}</div>`;
     });
     
     html += `    </div>`;
