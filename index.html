@@ -113,24 +113,22 @@
     .week-block { padding: 12px; margin-bottom: 16px; border-radius: 10px; }
     .week-title { font-size: 14px; margin-bottom: 10px; }
     
-    /* 가로 7열 격자를 해제하고 리스트 형태로 변환 */
     .grid-wrap { overflow-x: visible; }
     .grid { display: flex; flex-direction: column; min-width: auto; gap: 10px; }
-    .dow { display: none; } /* 상단 월화수목금토일 라벨 숨김 */
+    .dow { display: none; } 
     
     /* 일자별 카드 */
     .cell { min-height: auto; padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; gap: 8px; }
-    .cell.empty-day-mobile { display: none !important; } /* 강의가 없는 빈 날짜는 모바일에서 전면 숨김 */
+    .cell.empty-day-mobile { display: none !important; } 
     
     .date { font-size: 13px; font-weight: 700; color: #111; border-bottom: 1px solid #f0ede4; padding-bottom: 6px; margin-bottom: 4px; }
     
-    /* 시간 슬롯 레이아웃 수정: 세로 누적 */
     .time-slot { border: none; background: transparent; padding: 0; min-height: auto; flex-direction: column; gap: 4px; }
-    .time-slot.empty-slot-pc { display: none !important; } /* 강의가 없는 빈 시간대는 모바일에서 숨김 */
+    .time-slot.empty-slot-pc { display: none !important; } 
     
     .time-label { display: inline-block; background: #eee; color: #444; padding: 2px 6px; border-radius: 4px; font-size: 10px; width: auto; text-align: left; }
     .sess { padding: 8px 10px; border-radius: 6px; }
-    .sess .title { font-size: 12.5px; -webkit-line-clamp: unset; display: block; } /* 모바일에서는 제목이 생략 없이 다 보이게 설정 */
+    .sess .title { font-size: 12.5px; -webkit-line-clamp: unset; display: block; } 
     
     .modal-content { margin: 25% auto; padding: 16px; width: 90%; box-sizing: border-box; }
     .modal-title { font-size: 15px; }
@@ -217,11 +215,11 @@ function normalizeTime(timeStr) {
 
 function parseRows(rows){
   const recs = [];
+  // [수정] i=2부터 시작하여 데이터 첫 줄(3행)부터 누락 없이 파싱
   for(let i=2; i<rows.length; i++){
     const r = rows[i];
-    if(!r || r.length < 11) continue;
+    if(!r || r.length < 10) continue;
     
-    // 헤더 구조 순서 매칭 (0부터 시작)
     const month = (r[1]||"").trim();    
     const day = (r[2]||"").trim();      
     const weekday = (r[3]||"").trim();  
@@ -240,7 +238,6 @@ function parseRows(rows){
     recs.push({month, day, weekday, time, teacher, target, topic, record, title, notice, material});
   }
   
-  // 날짜/시간 정렬
   recs.sort((a, b) => {
     if(parseInt(a.month) !== parseInt(b.month)) return parseInt(a.month) - parseInt(b.month);
     if(parseInt(a.day) !== parseInt(b.day)) return parseInt(a.day) - parseInt(b.day);
@@ -250,7 +247,6 @@ function parseRows(rows){
   return recs;
 }
 
-// 7월 6일(월요일)부터 안전하게 한 주씩 주차를 생성해 주는 고정형 스케줄 빌더
 function buildRows(recs){
   const weeks = [];
   
@@ -265,10 +261,13 @@ function buildRows(recs){
     return { month: m, day: d };
   }
 
-  // 데이터의 끝지점 파악
-  let lastRec = recs[recs.length - 1];
-  let endMonth = lastRec ? parseInt(lastRec.month) : 8;
-  let endDay = lastRec ? parseInt(lastRec.day) : 31;
+  let endMonth = 8;
+  let endDay = 31;
+  if(recs.length > 0){
+    let lastRec = recs[recs.length - 1];
+    endMonth = parseInt(lastRec.month);
+    endDay = parseInt(lastRec.day);
+  }
   
   let loopActive = true;
   let safetyCount = 0;
@@ -303,24 +302,6 @@ function buildRows(recs){
 }
 
 function render(weeks){
-  let html = '<div class="grid">';
-  allSessionsMap = {};
-  
-  // PC 캘린더 상단에 한 번만 뿌려줄 요일 헤더
-  WEEK.forEach(w=>{
-    html += `<div class="dow">${w}</div>`;
-  });
-  
-  weeks.forEach((week, index) => {
-    // 각 주차의 시작일과 종료일 계산
-    const startText = `${week[0].month}/${week[0].day}`;
-    const endText = `${week[6].month}/${week[6].day}`;
-    
-    // 모바일 뷰에서도 주차 구분을 확인하기 위해 주차 타이틀 요소를 특수 배치하되 grid 레이아웃에 맞게 조절
-    // (여기서는 주차 타이틀 구분을 위해 단순 주차 블록 래퍼로 쪼개는 대신 원본 스타일 틀과 통합 유지)
-  });
-
-  // 완전한 모바일 대응을 위해 래퍼 구조 변경 구성
   let complexHtml = "";
   allSessionsMap = {};
 
@@ -339,7 +320,6 @@ function render(weeks){
     
     week.forEach(cell=>{
       let hasSessions = cell.sessions && cell.sessions.length > 0;
-      // 모바일에서 아예 안 보이게 감출 스타일용 클래스 분기
       let mobileClass = hasSessions ? "" : " empty-day-mobile";
       
       let cellInner = `<div class="date">${escapeHtml(cell.month)}/${escapeHtml(cell.day)} (${escapeHtml(cell.weekday)})</div>`;
@@ -373,7 +353,6 @@ function render(weeks){
           cellInner += `  <span class="time-label">${fixedTime}</span>${slotInner}`;
           cellInner += `</div>`;
         } else {
-          // PC뷰에서는 격자 유지를 위한 빈 칸 표시, 모바일에서는 CSS로 숨김처리
           cellInner += `<div class="time-slot empty-slot-pc">`;
           cellInner += `  <span class="time-label">${fixedTime}</span>`;
           cellInner += `</div>`;
