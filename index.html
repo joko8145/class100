@@ -8,6 +8,7 @@
   :root{
     --bg:#ffffff; --bg2:#f7f6f2; --border:#e3e1d8; --text:#222; --muted:#777;
     --primary: #378ADD;
+    --past-bg: #fcfbfa;
   }
   body{
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -29,8 +30,15 @@
     background: var(--bg); border-radius: 12px; padding: 16px; border: 1px solid var(--border); margin-bottom: 24px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.02);
   }
+  /* 지난 일정 주차 스타일 구분 */
+  .week-block.past-week {
+    background: var(--past-bg); opacity: 0.65; border-style: dashed;
+  }
   .week-title {
     font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #333; padding-left: 6px; border-left: 4px solid var(--primary);
+  }
+  .week-block.past-week .week-title {
+    border-left-color: var(--muted); color: var(--muted);
   }
   .grid-wrap{ overflow-x:auto; }
   
@@ -140,7 +148,7 @@
 <body>
 
 <h1>2026 여름방학 교실백점 특강 캘린더</h1>
-<div class="sub">구글 시트와 연동되어 있습니다. (7/6 월요일 고정 시작, 모바일 모드 최적화 지원)</div>
+<div class="sub">구글 시트 연동 (7/6 월요일 시작 고정, 오늘 기준 지난 주차는 하단 자동 정렬)</div>
 
 <div class="legend">
   <span><span class="dot dot-자기계발"></span>자기계발</span>
@@ -180,7 +188,6 @@
 <script>
 const SHEET_ID = "1aV6EsFMlemWoD76kfx4Y28P46VgzHOulP0jLs5hC7D4";
 const GID = "0";
-// [중요 수정] 구글 API가 데이터 첫 줄을 헤더로 착각해 버리는 문제를 막기 위해 &headers=2 옵션을 강제 추가했습니다.
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&gid=" + GID + "&headers=2";
 const WEEK = ["월","화","수","목","금","토","일"];
 const FIXED_TIMES = ["10:00", "13:00", "16:00", "19:30"];
@@ -216,7 +223,6 @@ function normalizeTime(timeStr) {
 
 function parseRows(rows){
   const recs = [];
-  // &headers=2 조치로 인해 상단 2개의 헤더를 제외한 모든 데이터가 rows 배열에 순수한 0번부터 담기게 됩니다.
   for(let i=0; i<rows.length; i++){
     const r = rows[i];
     if(!r || r.length < 10) continue;
@@ -250,8 +256,6 @@ function parseRows(rows){
 
 function buildRows(recs){
   const weeks = [];
-  
-  // 시작점 고정: 2026년 7월 6일 월요일
   let currentMonth = 7;
   let currentDay = 6;
   const daysInMonth = { 7: 31, 8: 31, 9: 30 }; 
@@ -302,89 +306,113 @@ function buildRows(recs){
   return weeks;
 }
 
-function render(weeks){
-  let complexHtml = "";
-  allSessionsMap = {};
-
-  weeks.forEach((week, index) => {
-    const startText = `${week[0].month}/${week[0].day}`;
-    const endText = `${week[6].month}/${week[6].day}`;
-
-    complexHtml += `<div class="week-block">`;
-    complexHtml += `  <div class="week-title">${index + 1}주차 특강 (${startText} ~ ${endText})</div>`;
-    complexHtml += `  <div class="grid-wrap">`;
-    complexHtml += `    <div class="grid">`;
+function renderWeekBlock(week, index, isPast) {
+  const startText = `${week[0].month}/${week[0].day}`;
+  const endText = `${week[6].month}/${week[6].day}`;
+  
+  let blockHtml = `<div class="week-block ${isPast ? 'past-week' : ''}">`;
+  blockHtml += `  <div class="week-title">${index + 1}주차 특강 (${startText} ~ ${endText}) ${isPast ? '<span style="font-size:12px; font-weight:normal; color:#999;">(지난 일정)</span>' : ''}</div>`;
+  blockHtml += `  <div class="grid-wrap">`;
+  blockHtml += `    <div class="grid">`;
+  
+  WEEK.forEach(w=>{
+    blockHtml += `<div class="dow">${w}</div>`;
+  });
+  
+  week.forEach(cell=>{
+    let hasSessions = cell.sessions && cell.sessions.length > 0;
+    let mobileClass = hasSessions ? "" : " empty-day-mobile";
     
-    WEEK.forEach(w=>{
-      complexHtml += `<div class="dow">${w}</div>`;
+    let cellInner = `<div class="date">${escapeHtml(cell.month)}/${escapeHtml(cell.day)} (${escapeHtml(cell.weekday)})</div>`;
+    const slotMap = { "10:00":[], "13:00":[], "16:00":[], "19:30":[], "기타":[] };
+    
+    cell.sessions.forEach(s => {
+      const norm = normalizeTime(s.time);
+      if(slotMap[norm]) slotMap[norm].push(s);
+      else slotMap["기타"].push(s);
     });
     
-    week.forEach(cell=>{
-      let hasSessions = cell.sessions && cell.sessions.length > 0;
-      let mobileClass = hasSessions ? "" : " empty-day-mobile";
+    FIXED_TIMES.forEach(fixedTime => {
+      const targetSessions = slotMap[fixedTime];
+      let slotInner = "";
       
-      let cellInner = `<div class="date">${escapeHtml(cell.month)}/${escapeHtml(cell.day)} (${escapeHtml(cell.weekday)})</div>`;
-      const slotMap = { "10:00":[], "13:00":[], "16:00":[], "19:30":[], "기타":[] };
-      
-      cell.sessions.forEach(s => {
-        const norm = normalizeTime(s.time);
-        if(slotMap[norm]) slotMap[norm].push(s);
-        else slotMap["기타"].push(s);
-      });
-      
-      FIXED_TIMES.forEach(fixedTime => {
-        const targetSessions = slotMap[fixedTime];
-        let slotInner = "";
-        
-        if(targetSessions && targetSessions.length > 0) {
-          targetSessions.forEach(s => {
-            const cat = CATMAP[s.topic] || "기타";
-            const sId = `sess_${s.month}_${s.day}_${s.time.replace(/[^a-zA-Z0-9]/g,'')}`;
-            allSessionsMap[sId] = s;
-            
-            slotInner += `<div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
-              + `  <div class="topic-tag">#${escapeHtml(s.topic)}</div>`
-              + `  <div class="title">${escapeHtml(s.title)}</div>`
-              + `</div>`;
-          });
-        }
-
-        if(slotInner !== "") {
-          cellInner += `<div class="time-slot">`;
-          cellInner += `  <span class="time-label">${fixedTime}</span>${slotInner}`;
-          cellInner += `</div>`;
-        } else {
-          cellInner += `<div class="time-slot empty-slot-pc">`;
-          cellInner += `  <span class="time-label">${fixedTime}</span>`;
-          cellInner += `</div>`;
-        }
-      });
-      
-      if(slotMap["기타"].length > 0) {
-        slotMap["기타"].forEach(s => {
+      if(targetSessions && targetSessions.length > 0) {
+        targetSessions.forEach(s => {
           const cat = CATMAP[s.topic] || "기타";
           const sId = `sess_${s.month}_${s.day}_${s.time.replace(/[^a-zA-Z0-9]/g,'')}`;
           allSessionsMap[sId] = s;
           
-          cellInner += `<div class="time-slot">`;
-          cellInner += `  <span class="time-label" style="background:#FAECE7; color:#D85A30;">${escapeHtml(s.time)}</span>`;
-          cellInner += `  <div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
-            + `    <div class="topic-tag">#${escapeHtml(s.topic)}</div>`
-            + `    <div class="title">${escapeHtml(s.title)}</div>`
-            + `  </div>`;
-          cellInner += `</div>`;
+          slotInner += `<div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
+            + `  <div class="topic-tag">#${escapeHtml(s.topic)}</div>`
+            + `  <div class="title">${escapeHtml(s.title)}</div>`
+            + `</div>`;
         });
       }
-      
-      complexHtml += `<div class="cell${mobileClass}">${cellInner}</div>`;
+
+      if(slotInner !== "") {
+        cellInner += `<div class="time-slot">`;
+        cellInner += `  <span class="time-label">${fixedTime}</span>${slotInner}`;
+        cellInner += `</div>`;
+      } else {
+        cellInner += `<div class="time-slot empty-slot-pc">`;
+        cellInner += `  <span class="time-label">${fixedTime}</span>`;
+        cellInner += `</div>`;
+      }
     });
     
-    complexHtml += `    </div>`;
-    complexHtml += `  </div>`;
-    complexHtml += `</div>`;
+    if(slotMap["기타"].length > 0) {
+      slotMap["기타"].forEach(s => {
+        const cat = CATMAP[s.topic] || "기타";
+        const sId = `sess_${s.month}_${s.day}_${s.time.replace(/[^a-zA-Z0-9]/g,'')}`;
+        allSessionsMap[sId] = s;
+        
+        cellInner += `<div class="time-slot">`;
+        cellInner += `  <span class="time-label" style="background:#FAECE7; color:#D85A30;">${escapeHtml(s.time)}</span>`;
+        cellInner += `  <div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
+          + `    <div class="topic-tag">#${escapeHtml(s.topic)}</div>`
+          + `    <div class="title">${escapeHtml(s.title)}</div>`
+          + `  </div>`;
+        cellInner += `</div>`;
+      });
+    }
+    
+    blockHtml += `<div class="cell${mobileClass}">${cellInner}</div>`;
   });
   
-  container.innerHTML = complexHtml;
+  blockHtml += `    </div>`;
+  blockHtml += `  </div>`;
+  blockHtml += `</div>`;
+  
+  return blockHtml;
+}
+
+function render(weeks){
+  allSessionsMap = {};
+  
+  // [수정] 명확하게 연도, 월, 일, 시각 정보까지 설정하여 정밀한 오늘 타임스탬프 계산
+  const now = new Date();
+  const todayTimestamp = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).getTime();
+  
+  let currentWeeksHtml = ""; 
+  let pastWeeksHtml = "";    
+
+  weeks.forEach((week, index) => {
+    const SundayCell = week[6];
+    const sunMonth = parseInt(SundayCell.month) - 1; 
+    const sunDay = parseInt(SundayCell.day);
+    
+    // [수정] 2026년 해당 주차 일요일 밤 23:59:59로 명확한 한계 마감선 지정
+    const weekEndDateTime = new Date(2026, sunMonth, sunDay, 23, 59, 59).getTime();
+    
+    // 오늘 날짜가 주차 마감 시각을 완전히 넘겼을 때만 '지난 일정' 분류
+    if(todayTimestamp > weekEndDateTime) {
+      pastWeeksHtml += renderWeekBlock(week, index, true);
+    } else {
+      currentWeeksHtml += renderWeekBlock(week, index, false);
+    }
+  });
+  
+  container.innerHTML = currentWeeksHtml + pastWeeksHtml;
 }
 
 window.openSessionDetail = function(sId) {
