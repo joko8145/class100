@@ -2,10 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>2026 여름방학 교실백점 특강 캘린더</title>
+<title>2026 여름방학 교실백점 특강 캘린더 (주별 보기)</title>
 <style>
   :root{
     --bg:#ffffff; --bg2:#f7f6f2; --border:#e3e1d8; --text:#222; --muted:#777;
+    --time-bg:#f1efe8;
   }
   body{
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -20,32 +21,53 @@
   }
   button:hover{ background:var(--bg2); }
   #status{ font-size:13px; color:var(--muted); }
-  .grid-wrap{ overflow-x:auto; background:var(--bg); border-radius:12px; padding:12px; border:1px solid var(--border); }
-  .grid{
-    display:grid; grid-template-columns: repeat(7, minmax(150px,1fr)); gap:6px; min-width:1100px;
+  
+  /* 주차별 컨테이너 스타일 */
+  .week-block {
+    background: var(--bg); border-radius: 12px; padding: 16px; border: 1px solid var(--border); margin-bottom: 24px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
   }
-  .dow{ font-size:13px; color:var(--muted); text-align:center; padding:6px 0; font-weight:600; }
+  .week-title {
+    font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #444; padding-left: 4px; border-left: 4px solid var(--muted);
+  }
+  .grid-wrap{ overflow-x:auto; }
+  .grid{
+    display:grid; grid-template-columns: repeat(7, minmax(150px,1fr)); gap:8px; min-width:1100px;
+  }
+  .dow{ font-size:13px; color:var(--muted); text-align:center; padding:6px 0; font-weight:600; border-bottom: 2px solid var(--border); margin-bottom: 4px;}
   .cell{
-    border:1px solid var(--border); border-radius:8px; padding:8px; min-height:90px; background:#fff;
+    border:1px solid var(--border); border-radius:8px; padding:8px; min-height:160px; background:#fff; display: flex; flex-direction: column; gap: 6px;
   }
   .cell.empty{ border:none; background:transparent; }
-  .date{ font-size:13px; font-weight:600; margin-bottom:6px; }
+  .date{ font-size:13px; font-weight:700; margin-bottom:4px; color: #333; }
+  
+  /* 시간별 슬롯 스타일 */
+  .time-slot {
+    border: 1px dashed #e3e1d8; border-radius: 6px; padding: 4px 6px; min-height: 40px; display: flex; flex-direction: column; justify-content: flex-start; background: #fafafa;
+  }
+  .time-label {
+    font-size: 11px; font-weight: 700; color: #888; margin-bottom: 3px; display: inline-block;
+  }
+
+  /* 세션 카드 스타일 */
   .sess{
-    border-radius:6px; padding:4px 6px; margin-bottom:5px; font-size:12px; line-height:1.4; cursor:default;
+    border-radius: 4px; padding: 4px 6px; font-size:12px; line-height:1.4; cursor:default; width: 100%; box-sizing: border-box;
   }
-  .sess .time{ font-weight:600; }
+  .sess .time{ font-weight:600; display: none; } /* 슬롯 구조이므로 자체 시간 텍스트는 숨김 처리 */
   .sess .title{
-    overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    font-weight: 600; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   }
+  .sess .instructor { font-size: 11px; color: rgba(0,0,0,0.6); margin-top: 2px; }
+
   .legend{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; color:var(--muted); }
   .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:4px; vertical-align:-1px; }
 
-  .cat-자기계발{ background:#EEEDFE; color:#26215C; }
-  .cat-업무효율화{ background:#E6F1FB; color:#042C53; }
-  .cat-수업관련{ background:#E1F5EE; color:#04342C; }
-  .cat-생활지도{ background:#FAECE7; color:#4A1B0C; }
-  .cat-학급경영{ background:#FAEEDA; color:#412402; }
-  .cat-기타{ background:#F1EFE8; color:#2C2C2A; }
+  .cat-자기계발{ background:#EEEDFE; color:#26215C; border-left: 3px solid #7F77DD; }
+  .cat-업무효율화{ background:#E6F1FB; color:#042C53; border-left: 3px solid #378ADD; }
+  .cat-수업관련{ background:#E1F5EE; color:#04342C; border-left: 3px solid #1D9E75; }
+  .cat-생활지도{ background:#FAECE7; color:#4A1B0C; border-left: 3px solid #D85A30; }
+  .cat-학급경영{ background:#FAEEDA; color:#412402; border-left: 3px solid #BA7517; }
+  .cat-기타{ background:#F1EFE8; color:#2C2C2A; border-left: 3px solid #888780; }
 
   .dot-자기계발{ background:#7F77DD; }
   .dot-업무효율화{ background:#378ADD; }
@@ -62,7 +84,7 @@
 <body>
 
 <h1>2026 여름방학 교실백점 특강 캘린더</h1>
-<div class="sub">구글 시트와 연동되어 있습니다. 시트 내용을 수정한 뒤 "새로고침"을 누르면 최신 내용이 반영됩니다.</div>
+<div class="sub">구글 시트와 연동되어 있습니다. 주차별 일정을 고정 시간대(10시, 13시, 16시, 19시 30분)로 나누어 보여줍니다.</div>
 
 <div class="legend">
   <span><span class="dot dot-자기계발"></span>자기계발</span>
@@ -78,9 +100,8 @@
   <button id="refresh-btn">🔄 새로고침</button>
 </div>
 
-<div class="grid-wrap">
-  <div id="cal-root">불러오는 중...</div>
-</div>
+<!-- 주차별 달력이 동적으로 생성될 루트 공간 -->
+<div id="cal-container">불러오는 중...</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
@@ -88,6 +109,8 @@ const SHEET_ID = "1aV6EsFMlemWoD76kfx4Y28P46VgzHOulP0jLs5hC7D4";
 const GID = "0";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&gid=" + GID;
 const WEEK = ["월","화","수","목","금","토","일"];
+const FIXED_TIMES = ["10:00", "13:00", "16:00", "19:30"]; // 고정 타임라인 슬롯
+
 const CATMAP = {
   "자기계발":"자기계발",
   "업무효율화":"업무효율화",
@@ -96,12 +119,22 @@ const CATMAP = {
   "학급경영":"학급경영"
 };
 
-const root = document.getElementById('cal-root');
+const container = document.getElementById('cal-container');
 const statusEl = document.getElementById('status');
 const btn = document.getElementById('refresh-btn');
 
 function escapeHtml(s){
   return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// 시간 문자열 정규화 (예: '10:00 전학령' 또는 '19:30분' -> 고정 슬롯 매칭용 깨끗한 시간 추출)
+function normalizeTime(timeStr) {
+  const clean = timeStr.replace(/[^0-9:]/g, ""); // 숫자와 콜론만 남김
+  if(clean.startsWith("10:")) return "10:00";
+  if(clean.startsWith("13:")) return "13:00";
+  if(clean.startsWith("16:")) return "16:00";
+  if(clean.startsWith("19:3")) return "19:30";
+  return timeStr; // 일치하는 고정 시간이 없으면 원래 문자열 반환
 }
 
 function parseRows(rows){
@@ -123,49 +156,117 @@ function parseRows(rows){
   return recs;
 }
 
+// 주차별(행 단위) 그룹화 빌더
 function buildRows(recs){
-  const rows = [];
-  let current = null;
+  const weeks = [];
+  let currentWeek = new Array(7).fill(null);
   let lastKey = null;
+  
   recs.forEach(rec=>{
     const key = rec.month+"-"+rec.day;
     const wIdx = WEEK.indexOf(rec.weekday);
-    if(key !== lastKey){
-      if(wIdx===0 || !current){ current = new Array(7).fill(null); rows.push(current); }
-      if(!current[wIdx]) current[wIdx] = {month:rec.month, day:rec.day, weekday:rec.weekday, sessions:[]};
-      lastKey = key;
+    
+    // 월요일이거나 새로운 주차 그룹 생성이 필요할 때 정렬 처리
+    if (wIdx === 0 && currentWeek.some(c => c !== null)) {
+      weeks.push(currentWeek);
+      currentWeek = new Array(7).fill(null);
     }
-    if(!current[wIdx]) current[wIdx] = {month:rec.month, day:rec.day, weekday:rec.weekday, sessions:[]};
-    current[wIdx].sessions.push(rec);
+    
+    if(!currentWeek[wIdx]) {
+      currentWeek[wIdx] = {month:rec.month, day:rec.day, weekday:rec.weekday, sessions:[]};
+    }
+    currentWeek[wIdx].sessions.push(rec);
   });
-  return rows;
+  
+  if (currentWeek.some(c => c !== null)) {
+    weeks.push(currentWeek);
+  }
+  return weeks;
 }
 
-function render(rows){
-  let html = '<div class="grid">';
-  WEEK.forEach(w=>{
-    html += '<div class="dow">'+w+'</div>';
-  });
-  rows.forEach(row=>{
-    row.forEach(cell=>{
+function render(weeks){
+  let html = '';
+  
+  weeks.forEach((week, index) => {
+    // 해당 주차의 시작 날짜와 끝 날짜 탐색 (주차 타이틀용)
+    const validCells = week.filter(c => c !== null);
+    const startText = validCells.length > 0 ? `${validCells[0].month}/${validCells[0].day}` : '';
+    const endText = validCells.length > 0 ? `${validCells[validCells.length-1].month}/${validCells[validCells.length-1].day}` : '';
+    
+    html += `<div class="week-block">`;
+    html += `  <div class="week-title">${index + 1}주차 일시 (${startText} ~ ${endText})</div>`;
+    html += `  <div class="grid-wrap">`;
+    html += `    <div class="grid">`;
+    
+    // 요일 헤더 출력
+    WEEK.forEach(w=>{
+      html += `<div class="dow">${w}</div>`;
+    });
+    
+    // 주간 날짜 셀 출력
+    week.forEach(cell=>{
       if(!cell){
         html += '<div class="cell empty"></div>';
         return;
       }
-      let inner = '<div class="date">'+escapeHtml(cell.month)+'/'+escapeHtml(cell.day)+'</div>';
-      cell.sessions.forEach(s=>{
-        const cat = CATMAP[s.topic] || "기타";
-        const full = s.time+' '+s.teacher+' - '+s.title;
-        inner += '<div class="sess cat-'+cat+'" title="'+escapeHtml(full)+'">'
-          + '<div class="time">'+escapeHtml(s.time.split('-')[0])+' '+escapeHtml(s.teacher)+'</div>'
-          + '<div class="title">'+escapeHtml(s.title)+'</div>'
-          + '</div>';
+      
+      let cellInner = `<div class="date">${escapeHtml(cell.month)}/${escapeHtml(cell.day)}</div>`;
+      
+      // 고정 시간대별로 묶어서 슬롯 렌더링
+      const slotMap = { "10:00":[], "13:00":[], "16:00":[], "19:30":[], "기타":[] };
+      
+      cell.sessions.forEach(s => {
+        const norm = normalizeTime(s.time);
+        if(slotMap[norm]) {
+          slotMap[norm].push(s);
+        } else {
+          slotMap["기타"].push(s);
+        }
       });
-      html += '<div class="cell">'+inner+'</div>';
+      
+      // 1. 고정 시간 슬롯 4개 순서대로 렌더링
+      FIXED_TIMES.forEach(fixedTime => {
+        cellInner += `<div class="time-slot">`;
+        cellInner += `  <span class="time-label">${fixedTime}</span>`;
+        
+        const targetSessions = slotMap[fixedTime];
+        if(targetSessions && targetSessions.length > 0) {
+          targetSessions.forEach(s => {
+            const cat = CATMAP[s.topic] || "기타";
+            const full = s.time+' ['+s.teacher+'] '+s.title;
+            cellInner += `<div class="sess cat-${cat}" title="${escapeHtml(full)}">`
+              + `<div class="title">${escapeHtml(s.title)}</div>`
+              + `<div class="instructor">${escapeHtml(s.time.replace(fixedTime, "").trim())} ${escapeHtml(s.teacher)}</div>`
+              + `</div>`;
+          });
+        }
+        cellInner += `</div>`;
+      });
+      
+      // 2. 혹시 고정 시간 외에 다른 시간대가 입력되었을 경우 하단에 추가 노출 처리
+      if(slotMap["기타"].length > 0) {
+        slotMap["기타"].forEach(s => {
+          const cat = CATMAP[s.topic] || "기타";
+          const full = s.time+' ['+s.teacher+'] '+s.title;
+          cellInner += `<div class="time-slot" style="border-color: #ffcccc; background: #fffcfc;">`;
+          cellInner += `  <span class="time-label" style="color: #d85a30;">${escapeHtml(s.time)}</span>`;
+          cellInner += `  <div class="sess cat-${cat}" title="${escapeHtml(full)}">`
+            + `    <div class="title">${escapeHtml(s.title)}</div>`
+            + `    <div class="instructor">${escapeHtml(s.teacher)}</div>`
+            + `  </div>`;
+          cellInner += `</div>`;
+        });
+      }
+      
+      html += `<div class="cell">${cellInner}</div>`;
     });
+    
+    html += `    </div>`;
+    html += `  </div>`;
+    html += `</div>`;
   });
-  html += '</div>';
-  root.innerHTML = html;
+  
+  container.innerHTML = html;
 }
 
 async function load(){
@@ -177,15 +278,16 @@ async function load(){
     const parsed = Papa.parse(text);
     const recs = parseRows(parsed.data);
     if(recs.length===0) throw new Error("데이터를 찾을 수 없습니다");
-    const rows = buildRows(recs);
-    render(rows);
+    
+    // 데이터를 주차 단위 배열 구조로 전환 후 렌더링
+    const weeks = buildRows(recs);
+    render(weeks);
+    
     const now = new Date();
     statusEl.textContent = '마지막 갱신: '+now.toLocaleString('ko-KR');
   }catch(err){
     statusEl.textContent = '불러오기 실패';
-    root.innerHTML = '<div class="error-box">시트를 불러오지 못했습니다.<br>'
-      + '1) 구글 시트가 "링크가 있는 모든 사용자에게 공개"로 설정되어 있는지 확인해주세요.<br>'
-      + '2) 이 HTML 파일을 더블클릭(file:// 로 직접 열기)하면 브라우저 보안 정책 때문에 차단될 수 있습니다. 이 경우 같은 폴더에서 간단한 로컬 서버로 열거나, 구글 드라이브 등 웹 호스팅에 올려서 열어주세요.<br>'
+    container.innerHTML = '<div class="error-box">시트를 불러오지 못했습니다.<br>'
       + '오류 내용: '+escapeHtml(err.message)+'</div>';
   }
 }
