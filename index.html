@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>2026 여름방학 교실백점 특강 캘린더 (주별 보기)</title>
+<title>2026 여름방학 교실백점 특강 캘린더</title>
 <style>
   :root{
     --bg:#ffffff; --bg2:#f7f6f2; --border:#e3e1d8; --text:#222; --muted:#777;
-    --time-bg:#f1efe8;
+    --primary: #378ADD;
   }
   body{
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -43,7 +43,7 @@
   
   /* 시간별 슬롯 스타일 */
   .time-slot {
-    border: 1px dashed #e3e1d8; border-radius: 6px; padding: 6px; min-height: 45px; display: flex; flex-direction: column; justify-content: flex-start; background: #fafafa; gap: 4px;
+    border: 1px dashed #e3e1d8; border-radius: 6px; padding: 6px; min-height: 50px; display: flex; flex-direction: column; justify-content: flex-start; background: #fafafa; gap: 4px;
   }
   .time-label {
     font-size: 11px; font-weight: 700; color: #888; margin-bottom: 2px; display: inline-block;
@@ -51,16 +51,20 @@
 
   /* 세션 카드 스타일 */
   .sess{
-    border-radius: 4px; padding: 4px 6px; font-size:12px; line-height:1.4; cursor:default; width: 100%; box-sizing: border-box;
+    border-radius: 6px; padding: 6px 8px; font-size:12px; line-height:1.4; cursor:pointer; width: 100%; box-sizing: border-box;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .sess:hover {
+    transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  }
+  .sess .topic-tag {
+    font-size: 10px; font-weight: 700; display: inline-block; margin-bottom: 3px; opacity: 0.8;
   }
   .sess .title{
-    font-weight: 700; color: #111; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; margin-bottom: 2px;
+    font-weight: 700; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
   }
-  .sess .instructor { font-size: 11px; color: rgba(0,0,0,0.6); font-weight: 500; }
 
-  .legend{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; color:var(--muted); }
-  .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:4px; vertical-align:-1px; }
-
+  /* 카테고리 컬러 테마 */
   .cat-자기계발{ background:#EEEDFE; color:#26215C; border-left: 3px solid #7F77DD; }
   .cat-업무효율화{ background:#E6F1FB; color:#042C53; border-left: 3px solid #378ADD; }
   .cat-수업관련{ background:#E1F5EE; color:#04342C; border-left: 3px solid #1D9E75; }
@@ -68,6 +72,8 @@
   .cat-학급경영{ background:#FAEEDA; color:#412402; border-left: 3px solid #BA7517; }
   .cat-기타{ background:#F1EFE8; color:#2C2C2A; border-left: 3px solid #888780; }
 
+  .legend{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; color:var(--muted); }
+  .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:4px; vertical-align:-1px; }
   .dot-자기계발{ background:#7F77DD; }
   .dot-업무효율화{ background:#378ADD; }
   .dot-수업관련{ background:#1D9E75; }
@@ -75,15 +81,30 @@
   .dot-학급경영{ background:#BA7517; }
   .dot-기타{ background:#888780; }
 
-  .error-box{
-    font-size:13px; color:var(--muted); padding:16px; border:1px solid var(--border); border-radius:8px; background:#fff;
+  /* 팝업 모달 스타일 */
+  .modal {
+    display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
   }
+  .modal-content {
+    background-color: #fefefe; margin: 10% auto; padding: 24px; border: 1px solid #888; width: 80%; max-width: 550px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative;
+  }
+  .close {
+    color: #aaa; position: absolute; right: 20px; top: 16px; font-size: 28px; font-weight: bold; cursor: pointer;
+  }
+  .close:hover { color: #222; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #111; line-height: 1.5; padding-right: 24px; }
+  .info-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  .info-table th, .info-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+  .info-table th { background: var(--bg2); color: #555; width: 30%; font-weight: 600; }
+  .info-table td { color: #222; line-height: 1.5; white-space: pre-wrap; }
+
+  .error-box{ font-size:13px; color:var(--muted); padding:16px; border:1px solid var(--border); border-radius:8px; background:#fff; }
 </style>
 </head>
 <body>
 
 <h1>2026 여름방학 교실백점 특강 캘린더</h1>
-<div class="sub">구글 시트와 연동되어 있습니다. 주차별 일정을 고정 시간대(10시, 13시, 16시, 19시 30분)로 나누어 보여줍니다.</div>
+<div class="sub">구글 시트와 연동되어 있습니다. 주차별 일정을 고정 시간대별로 정렬하여 보여주며, 카드를 클릭하면 상세 안내가 나타납니다.</div>
 
 <div class="legend">
   <span><span class="dot dot-자기계발"></span>자기계발</span>
@@ -101,13 +122,29 @@
 
 <div id="cal-container">불러오는 중...</div>
 
+<div id="detailModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div class="modal-title" id="m-title">강의 제목</div>
+    <table class="info-table">
+      <tr><th>연수 주제</th><td id="m-topic"></td></tr>
+      <tr><th>일시 (시간)</th><td id="m-time"></td></tr>
+      <tr><th>강사명</th><td id="m-teacher"></td></tr>
+      <tr><th>연수 대상</th><td id="m-target"></td></tr>
+      <tr><th>녹화본 제공</th><td id="m-record"></td></tr>
+      <tr><th>사전 안내 사항</th><td id="m-notice"></td></tr>
+      <tr><th>강의자료 제공</th><td id="m-material"></td></tr>
+    </table>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 const SHEET_ID = "1aV6EsFMlemWoD76kfx4Y28P46VgzHOulP0jLs5hC7D4";
 const GID = "0";
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&gid=" + GID;
 const WEEK = ["월","화","수","목","금","토","일"];
-const FIXED_TIMES = ["10:00", "13:00", "16:00", "19:30"]; // 고정 타임라인 슬롯
+const FIXED_TIMES = ["10:00", "13:00", "16:00", "19:30"];
 
 const CATMAP = {
   "자기계발":"자기계발",
@@ -117,63 +154,95 @@ const CATMAP = {
   "학급경영":"학급경영"
 };
 
+// 전역 세션 저장소 (모달 팝업 맵핑용)
+let allSessionsMap = {};
+
 const container = document.getElementById('cal-container');
 const statusEl = document.getElementById('status');
 const btn = document.getElementById('refresh-btn');
+
+// 모달 엘리먼트
+const modal = document.getElementById("detailModal");
+const closeModal = document.querySelector(".close");
 
 function escapeHtml(s){
   return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-// 시간 문자열 정규화 (예: '10:00 전학령' 또는 '19:30분' -> 고정 슬롯 매칭용 깨끗한 시간 추출)
 function normalizeTime(timeStr) {
-  const clean = timeStr.replace(/[^0-9:]/g, ""); // 숫자와 콜론만 남김
+  const clean = timeStr.replace(/[^0-9:]/g, "");
   if(clean.startsWith("10:")) return "10:00";
   if(clean.startsWith("13:")) return "13:00";
   if(clean.startsWith("16:")) return "16:00";
   if(clean.startsWith("19:3")) return "19:30";
-  return timeStr; // 일치하는 고정 시간이 없으면 원래 문자열 반환
+  return timeStr;
 }
 
 function parseRows(rows){
   const recs = [];
+  // 시트 구조 헤더 스킵 후 파싱
   for(let i=2;i<rows.length;i++){
     const r = rows[i];
-    if(!r || r.length<11) continue;
+    if(!r || r.length < 11) continue;
+    
     const month = (r[1]||"").trim();
     const day = (r[2]||"").trim();
     const weekday = (r[3]||"").trim();
     const time = (r[4]||"").trim();
     const teacher = (r[6]||"").trim();
-    const topic = (r[8]||"").trim();
-    const title = (r[10]||"").trim();
+    const target = (r[7]||"").trim();   // 연수 대상
+    const topic = (r[8]||"").trim();    // 연수 주제
+    const record = (r[9]||"").trim();   // 녹화본 제공 여부
+    const title = (r[10]||"").trim();   // 강의 제목
+    const notice = (r[11]||"").trim();   // 강의 사전 안내 사항
+    const material = (r[12]||"").trim(); // 강의자료 제공 여부
+
     if(WEEK.indexOf(weekday)===-1) continue;
     if(!title && !teacher) continue;
-    recs.push({month,day,weekday,time,teacher,topic,title});
+    
+    recs.push({month, day, weekday, time, teacher, target, topic, record, title, notice, material});
   }
+  
+  // [주차 꼬임 방지 핵심] 날짜 순으로 완벽하게 데이터를 사전 정렬합니다.
+  recs.sort((a, b) => {
+    if(parseInt(a.month) !== parseInt(b.month)) return parseInt(a.month) - parseInt(b.month);
+    if(parseInt(a.day) !== parseInt(b.day)) return parseInt(a.day) - parseInt(b.day);
+    return FIXED_TIMES.indexOf(normalizeTime(a.time)) - FIXED_TIMES.indexOf(normalizeTime(b.time));
+  });
+
   return recs;
 }
 
-// 주차별(행 단위) 그룹화 빌더
+// 주차별 그룹 빌더 (정렬된 순서대로 7일 단위 분할 정돈)
 function buildRows(recs){
   const weeks = [];
+  if(recs.length === 0) return weeks;
+
   let currentWeek = new Array(7).fill(null);
-  
-  recs.forEach(rec=>{
+  let isFirstWeek = true;
+
+  recs.forEach(rec => {
     const wIdx = WEEK.indexOf(rec.weekday);
     
-    // 월요일이거나 새로운 주차 그룹 생성이 필요할 때 정렬 처리
-    if (wIdx === 0 && currentWeek.some(c => c !== null)) {
+    // 이전 주차에서 넘어가거나 월요일을 만나면 새 주차 블록 개설
+    if (!isFirstWeek && wIdx === 0 && currentWeek.some(c => c !== null) && !currentWeek[0]) {
       weeks.push(currentWeek);
       currentWeek = new Array(7).fill(null);
     }
     
+    // 만약 이미 해당 요일에 다른 날짜의 데이터가 차 있다면 주차 분리
+    if (currentWeek[wIdx] && (currentWeek[wIdx].day !== rec.day || currentWeek[wIdx].month !== rec.month)) {
+      weeks.push(currentWeek);
+      currentWeek = new Array(7).fill(null);
+    }
+
     if(!currentWeek[wIdx]) {
       currentWeek[wIdx] = {month:rec.month, day:rec.day, weekday:rec.weekday, sessions:[]};
     }
     currentWeek[wIdx].sessions.push(rec);
+    isFirstWeek = false;
   });
-  
+
   if (currentWeek.some(c => c !== null)) {
     weeks.push(currentWeek);
   }
@@ -182,9 +251,9 @@ function buildRows(recs){
 
 function render(weeks){
   let html = '';
+  allSessionsMap = {}; // 초기화
   
   weeks.forEach((week, index) => {
-    // 해당 주차의 시작 날짜와 끝 날짜 탐색 (주차 타이틀용)
     const validCells = week.filter(c => c !== null);
     const startText = validCells.length > 0 ? `${validCells[0].month}/${validCells[0].day}` : '';
     const endText = validCells.length > 0 ? `${validCells[validCells.length-1].month}/${validCells[validCells.length-1].day}` : '';
@@ -194,12 +263,10 @@ function render(weeks){
     html += `  <div class="grid-wrap">`;
     html += `    <div class="grid">`;
     
-    // 요일 헤더 출력
     WEEK.forEach(w=>{
       html += `<div class="dow">${w}</div>`;
     });
     
-    // 주간 날짜 셀 출력
     week.forEach(cell=>{
       if(!cell){
         html += '<div class="cell empty"></div>';
@@ -207,20 +274,14 @@ function render(weeks){
       }
       
       let cellInner = `<div class="date">${escapeHtml(cell.month)}/${escapeHtml(cell.day)}</div>`;
-      
-      // 고정 시간대별로 묶어서 슬롯 렌더링
       const slotMap = { "10:00":[], "13:00":[], "16:00":[], "19:30":[], "기타":[] };
       
       cell.sessions.forEach(s => {
         const norm = normalizeTime(s.time);
-        if(slotMap[norm]) {
-          slotMap[norm].push(s);
-        } else {
-          slotMap["기타"].push(s);
-        }
+        if(slotMap[norm]) slotMap[norm].push(s);
+        else slotMap["기타"].push(s);
       });
       
-      // 1. 고정 시간 슬롯 4개 순서대로 렌더링
       FIXED_TIMES.forEach(fixedTime => {
         cellInner += `<div class="time-slot">`;
         cellInner += `  <span class="time-label">${fixedTime}</span>`;
@@ -229,27 +290,30 @@ function render(weeks){
         if(targetSessions && targetSessions.length > 0) {
           targetSessions.forEach(s => {
             const cat = CATMAP[s.topic] || "기타";
-            const full = s.time+' ['+s.teacher+'] '+s.title;
-            // s.title이 메인 제목 위치로 오도록 순서 및 클래스 정상화 수정
-            cellInner += `<div class="sess cat-${cat}" title="${escapeHtml(full)}">`
-              + `<div class="title">${escapeHtml(s.title)}</div>`
-              + `<div class="instructor">${escapeHtml(s.time.replace(fixedTime, "").trim())} ${escapeHtml(s.teacher)}</div>`
+            const sId = `sess_${s.month}_${s.day}_${s.time.replace(/[^a-zA-Z0-9]/g,'')}`;
+            allSessionsMap[sId] = s; // 전역 데이터 바인딩
+            
+            // 핵심 수정: 연수주제와 강의제목만 메인에 깔끔하게 배치
+            cellInner += `<div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
+              + `  <div class="topic-tag">#${escapeHtml(s.topic)}</div>`
+              + `  <div class="title">${escapeHtml(s.title)}</div>`
               + `</div>`;
           });
         }
         cellInner += `</div>`;
       });
       
-      // 2. 혹시 고정 시간 외에 다른 시간대가 입력되었을 경우 하단에 추가 노출 처리
       if(slotMap["기타"].length > 0) {
         slotMap["기타"].forEach(s => {
           const cat = CATMAP[s.topic] || "기타";
-          const full = s.time+' ['+s.teacher+'] '+s.title;
+          const sId = `sess_${s.month}_${s.day}_${s.time.replace(/[^a-zA-Z0-9]/g,'')}`;
+          allSessionsMap[sId] = s;
+          
           cellInner += `<div class="time-slot" style="border-color: #ffcccc; background: #fffcfc;">`;
           cellInner += `  <span class="time-label" style="color: #d85a30;">${escapeHtml(s.time)}</span>`;
-          cellInner += `  <div class="sess cat-${cat}" title="${escapeHtml(full)}">`
+          cellInner += `  <div class="sess cat-${cat}" onclick="openSessionDetail('${sId}')">`
+            + `    <div class="topic-tag">#${escapeHtml(s.topic)}</div>`
             + `    <div class="title">${escapeHtml(s.title)}</div>`
-            + `    <div class="instructor">${escapeHtml(s.teacher)}</div>`
             + `  </div>`;
           cellInner += `</div>`;
         });
@@ -266,6 +330,27 @@ function render(weeks){
   container.innerHTML = html;
 }
 
+// 팝업 상세 창 띄우기 함수
+window.openSessionDetail = function(sId) {
+  const s = allSessionsMap[sId];
+  if(!s) return;
+  
+  document.getElementById("m-title").textContent = s.title || "지정된 강의 제목이 없습니다.";
+  document.getElementById("m-topic").textContent = s.topic || "-";
+  document.getElementById("m-time").textContent = `${s.month}월 ${s.day}일 (${s.weekday}) / ${s.time}`;
+  document.getElementById("m-teacher").textContent = s.teacher || "-";
+  document.getElementById("m-target").textContent = s.target || "-";
+  document.getElementById("m-record").textContent = s.record || "-";
+  document.getElementById("m-notice").textContent = s.notice || "특이사항 없음";
+  document.getElementById("m-material").textContent = s.material || "-";
+  
+  modal.style.display = "block";
+}
+
+// 팝업 닫기 이벤트 핸들러
+closeModal.onclick = function() { modal.style.display = "none"; }
+window.onclick = function(event) { if (event.target == modal) { modal.style.display = "none"; } }
+
 async function load(){
   statusEl.textContent = '불러오는 중...';
   try{
@@ -276,7 +361,6 @@ async function load(){
     const recs = parseRows(parsed.data);
     if(recs.length===0) throw new Error("데이터를 찾을 수 없습니다");
     
-    // 데이터를 주차 단위 배열 구조로 전환 후 렌더링
     const weeks = buildRows(recs);
     render(weeks);
     
