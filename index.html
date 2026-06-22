@@ -180,7 +180,8 @@
 <script>
 const SHEET_ID = "1aV6EsFMlemWoD76kfx4Y28P46VgzHOulP0jLs5hC7D4";
 const GID = "0";
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&gid=" + GID;
+// [중요 수정] 구글 API가 데이터 첫 줄을 헤더로 착각해 버리는 문제를 막기 위해 &headers=2 옵션을 강제 추가했습니다.
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&gid=" + GID + "&headers=2";
 const WEEK = ["월","화","수","목","금","토","일"];
 const FIXED_TIMES = ["10:00", "13:00", "16:00", "19:30"];
 
@@ -215,8 +216,8 @@ function normalizeTime(timeStr) {
 
 function parseRows(rows){
   const recs = [];
-  // [수정] i=2부터 시작하여 데이터 첫 줄(3행)부터 누락 없이 파싱
-  for(let i=2; i<rows.length; i++){
+  // &headers=2 조치로 인해 상단 2개의 헤더를 제외한 모든 데이터가 rows 배열에 순수한 0번부터 담기게 됩니다.
+  for(let i=0; i<rows.length; i++){
     const r = rows[i];
     if(!r || r.length < 10) continue;
     
