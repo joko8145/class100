@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>2026 여름방학 교실백점 특강 캘린더</title>
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f7f6f2; --border:#e3e1d8; --text:#222; --muted:#777;
+  }
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background:var(--bg2); color:var(--text); margin:0; padding:24px;
+  }
+  h1{ font-size:20px; font-weight:600; margin:0 0 4px; }
+  .sub{ font-size:13px; color:var(--muted); margin-bottom:16px; }
+  .toolbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
+  button{
+    font-size:13px; padding:8px 14px; border:1px solid var(--border); background:var(--bg);
+    border-radius:8px; cursor:pointer; color:var(--text);
+  }
+  button:hover{ background:var(--bg2); }
+  #status{ font-size:13px; color:var(--muted); }
+  .grid-wrap{ overflow-x:auto; background:var(--bg); border-radius:12px; padding:12px; border:1px solid var(--border); }
+  .grid{
+    display:grid; grid-template-columns: repeat(7, minmax(150px,1fr)); gap:6px; min-width:1100px;
+  }
+  .dow{ font-size:13px; color:var(--muted); text-align:center; padding:6px 0; font-weight:600; }
+  .cell{
+    border:1px solid var(--border); border-radius:8px; padding:8px; min-height:90px; background:#fff;
+  }
+  .cell.empty{ border:none; background:transparent; }
+  .date{ font-size:13px; font-weight:600; margin-bottom:6px; }
+  .sess{
+    border-radius:6px; padding:4px 6px; margin-bottom:5px; font-size:12px; line-height:1.4; cursor:default;
+  }
+  .sess .time{ font-weight:600; }
+  .sess .title{
+    overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  }
+  .legend{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12px; color:var(--muted); }
+  .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:4px; vertical-align:-1px; }
+
+  .cat-자기계발{ background:#EEEDFE; color:#26215C; }
+  .cat-업무효율화{ background:#E6F1FB; color:#042C53; }
+  .cat-수업관련{ background:#E1F5EE; color:#04342C; }
+  .cat-생활지도{ background:#FAECE7; color:#4A1B0C; }
+  .cat-학급경영{ background:#FAEEDA; color:#412402; }
+  .cat-기타{ background:#F1EFE8; color:#2C2C2A; }
+
+  .dot-자기계발{ background:#7F77DD; }
+  .dot-업무효율화{ background:#378ADD; }
+  .dot-수업관련{ background:#1D9E75; }
+  .dot-생활지도{ background:#D85A30; }
+  .dot-학급경영{ background:#BA7517; }
+  .dot-기타{ background:#888780; }
+
+  .error-box{
+    font-size:13px; color:var(--muted); padding:16px; border:1px solid var(--border); border-radius:8px; background:#fff;
+  }
+</style>
+</head>
+<body>
+
+<h1>2026 여름방학 교실백점 특강 캘린더</h1>
+<div class="sub">구글 시트와 연동되어 있습니다. 시트 내용을 수정한 뒤 "새로고침"을 누르면 최신 내용이 반영됩니다.</div>
+
+<div class="legend">
+  <span><span class="dot dot-자기계발"></span>자기계발</span>
+  <span><span class="dot dot-업무효율화"></span>업무효율화</span>
+  <span><span class="dot dot-수업관련"></span>수업 관련</span>
+  <span><span class="dot dot-생활지도"></span>생활지도 &amp; 교권</span>
+  <span><span class="dot dot-학급경영"></span>학급경영</span>
+  <span><span class="dot dot-기타"></span>기타</span>
+</div>
+
+<div class="toolbar">
+  <div id="status">불러오는 중...</div>
+  <button id="refresh-btn">🔄 새로고침</button>
+</div>
+
+<div class="grid-wrap">
+  <div id="cal-root">불러오는 중...</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+const SHEET_ID = "1aV6EsFMlemWoD76kfx4Y28P46VgzHOulP0jLs5hC7D4";
+const GID = "0";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&gid=" + GID;
+const WEEK = ["월","화","수","목","금","토","일"];
+const CATMAP = {
+  "자기계발":"자기계발",
+  "업무효율화":"업무효율화",
+  "수업 관련":"수업관련",
+  "생활지도 & 교권":"생활지도",
+  "학급경영":"학급경영"
+};
+
+const root = document.getElementById('cal-root');
+const statusEl = document.getElementById('status');
+const btn = document.getElementById('refresh-btn');
+
+function escapeHtml(s){
+  return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function parseRows(rows){
+  const recs = [];
+  for(let i=2;i<rows.length;i++){
+    const r = rows[i];
+    if(!r || r.length<11) continue;
+    const month = (r[1]||"").trim();
+    const day = (r[2]||"").trim();
+    const weekday = (r[3]||"").trim();
+    const time = (r[4]||"").trim();
+    const teacher = (r[6]||"").trim();
+    const topic = (r[8]||"").trim();
+    const title = (r[10]||"").trim();
+    if(WEEK.indexOf(weekday)===-1) continue;
+    if(!title && !teacher) continue;
+    recs.push({month,day,weekday,time,teacher,topic,title});
+  }
+  return recs;
+}
+
+function buildRows(recs){
+  const rows = [];
+  let current = null;
+  let lastKey = null;
+  recs.forEach(rec=>{
+    const key = rec.month+"-"+rec.day;
+    const wIdx = WEEK.indexOf(rec.weekday);
+    if(key !== lastKey){
+      if(wIdx===0 || !current){ current = new Array(7).fill(null); rows.push(current); }
+      if(!current[wIdx]) current[wIdx] = {month:rec.month, day:rec.day, weekday:rec.weekday, sessions:[]};
+      lastKey = key;
+    }
+    if(!current[wIdx]) current[wIdx] = {month:rec.month, day:rec.day, weekday:rec.weekday, sessions:[]};
+    current[wIdx].sessions.push(rec);
+  });
+  return rows;
+}
+
+function render(rows){
+  let html = '<div class="grid">';
+  WEEK.forEach(w=>{
+    html += '<div class="dow">'+w+'</div>';
+  });
+  rows.forEach(row=>{
+    row.forEach(cell=>{
+      if(!cell){
+        html += '<div class="cell empty"></div>';
+        return;
+      }
+      let inner = '<div class="date">'+escapeHtml(cell.month)+'/'+escapeHtml(cell.day)+'</div>';
+      cell.sessions.forEach(s=>{
+        const cat = CATMAP[s.topic] || "기타";
+        const full = s.time+' '+s.teacher+' - '+s.title;
+        inner += '<div class="sess cat-'+cat+'" title="'+escapeHtml(full)+'">'
+          + '<div class="time">'+escapeHtml(s.time.split('-')[0])+' '+escapeHtml(s.teacher)+'</div>'
+          + '<div class="title">'+escapeHtml(s.title)+'</div>'
+          + '</div>';
+      });
+      html += '<div class="cell">'+inner+'</div>';
+    });
+  });
+  html += '</div>';
+  root.innerHTML = html;
+}
+
+async function load(){
+  statusEl.textContent = '불러오는 중...';
+  try{
+    const res = await fetch(SHEET_URL, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const text = await res.text();
+    const parsed = Papa.parse(text);
+    const recs = parseRows(parsed.data);
+    if(recs.length===0) throw new Error("데이터를 찾을 수 없습니다");
+    const rows = buildRows(recs);
+    render(rows);
+    const now = new Date();
+    statusEl.textContent = '마지막 갱신: '+now.toLocaleString('ko-KR');
+  }catch(err){
+    statusEl.textContent = '불러오기 실패';
+    root.innerHTML = '<div class="error-box">시트를 불러오지 못했습니다.<br>'
+      + '1) 구글 시트가 "링크가 있는 모든 사용자에게 공개"로 설정되어 있는지 확인해주세요.<br>'
+      + '2) 이 HTML 파일을 더블클릭(file:// 로 직접 열기)하면 브라우저 보안 정책 때문에 차단될 수 있습니다. 이 경우 같은 폴더에서 간단한 로컬 서버로 열거나, 구글 드라이브 등 웹 호스팅에 올려서 열어주세요.<br>'
+      + '오류 내용: '+escapeHtml(err.message)+'</div>';
+  }
+}
+
+btn.addEventListener('click', load);
+load();
+</script>
+
+</body>
+</html>
